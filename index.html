@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Конструктор инапов Oskelly</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+    --ink:      #17120F;
+    --paper:    #FAF7F3;
+    --panel:    #FFFFFF;
+    --sunk:     #F1EBE4;
+    --line:     #E4DBD1;
+    --line-soft:#EFE8E0;
+    --muted:    #8B7F74;
+    --accent:   #7A2E3B;
+    --accent-in:#FFFFFF;
+    --code-bg:  #1C1714;
+    --code-ink: #E8DFD6;
+    --code-tag: #C98B96;
+    --code-att: #A9B48C;
+    --ok:       #4F6B4A;
+
+    --r: 3px;
+    --font-ui: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-dp: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+    --font-mo: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --ink:      #F3EDE6;
+        --paper:    #141110;
+        --panel:    #1C1817;
+        --sunk:     #232624;
+        --line:     #322C28;
+        --line-soft:#282320;
+        --muted:    #9C9088;
+        --accent:   #D98E9A;
+        --accent-in:#1C1817;
+        --code-bg:  #0F0D0C;
+        --code-ink: #E3DAD1;
+        --code-tag: #D98E9A;
+        --code-att: #AEBA92;
+        --ok:       #8FB088;
+    }
+}
+:root[data-theme="dark"] {
+    --ink:      #F3EDE6;
+    --paper:    #141110;
+    --panel:    #1C1817;
+    --sunk:     #232624;
+    --line:     #322C28;
+    --line-soft:#282320;
+    --muted:    #9C9088;
+    --accent:   #D98E9A;
+    --accent-in:#1C1817;
+    --code-bg:  #0F0D0C;
+    --code-ink: #E3DAD1;
+    --code-tag: #D98E9A;
+    --code-att: #AEBA92;
+    --ok:       #8FB088;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding-block: 28px 56px;
+    padding-inline: 20px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.wrap { max-width: 1320px; margin: 0 auto; }
+
+/* ── Шапка ─────────────────────────────────────────────── */
+.masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+}
+.masthead h1 {
+    font-family: var(--font-dp);
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+}
+.masthead p {
+    margin: 6px 0 0;
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: 13.5px;
+}
+.theme-btn {
+    flex: 0 0 auto;
+    padding: 9px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+.theme-btn:hover { border-color: var(--muted); }
+
+/* ── Выбор механики ────────────────────────────────────── */
+.kinds {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 26px;
+}
+.kind {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 15px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.kind:hover { border-color: var(--muted); }
+.kind[aria-pressed="true"] {
+    border-color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--ink);
+}
+.kind-n {
+    font-family: var(--font-mo);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+}
+.kind[aria-pressed="true"] .kind-n { color: var(--accent); }
+.kind-t { font-size: 14.5px; font-weight: 600; }
+.kind-d { font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+/* ── Сетка ─────────────────────────────────────────────── */
+.grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+}
+
+/* ── Панель настроек ───────────────────────────────────── */
+.controls { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+fieldset {
+    margin: 0;
+    padding: 0 0 18px;
+    border: 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+fieldset:last-of-type { border-bottom: 0; padding-bottom: 0; }
+legend {
+    padding: 0 0 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field > label { font-size: 12.5px; font-weight: 500; }
+.hint { font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+input[type="text"], input[type="url"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+}
+textarea { resize: vertical; min-height: 62px; line-height: 1.45; }
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+input[type="color"] {
+    width: 100%;
+    height: 36px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    cursor: pointer;
+}
+
+.check { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 9px; font-size: 12.5px; }
+.check:last-child { margin-bottom: 0; }
+.check input { margin: 2px 0 0; flex: 0 0 auto; accent-color: var(--accent); }
+
+/* ── Превью ────────────────────────────────────────────── */
+.right { position: sticky; top: env(safe-area-inset-top, 0px); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+.phone-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.phone-head h2 {
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.phone-head span { font-size: 11.5px; color: var(--muted); }
+
+.phone {
+    width: 100%;
+    max-width: 330px;
+    margin: 0 auto;
+    aspect-ratio: 330 / 580;
+    max-height: 580px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--sunk);
+    overflow: hidden;
+}
+.phone iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+/* ── Код ───────────────────────────────────────────────── */
+.tabs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tab {
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--muted);
+    font-family: var(--font-mo);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+.tab[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.copy {
+    margin-left: auto;
+    padding: 8px 16px;
+    border: 1px solid var(--accent);
+    border-radius: var(--r);
+    background: var(--accent);
+    color: var(--accent-in);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+.copy.done { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+.code-note { font-size: 11.5px; color: var(--muted); margin: 0; }
+
+pre.code {
+    margin: 0;
+    padding: 14px 16px;
+    max-height: 340px;
+    overflow: auto;
+    border-radius: var(--r);
+    background: var(--code-bg);
+    color: var(--code-ink);
+    font-family: var(--font-mo);
+    font-size: 11.5px;
+    line-height: 1.55;
+    tab-size: 4;
+}
+pre.code .t { color: var(--code-tag); }
+pre.code .a { color: var(--code-att); }
+pre.code .c { color: var(--muted); font-style: italic; }
+
+.callout {
+    padding: 13px 15px;
+    border-left: 2px solid var(--accent);
+    background: var(--sunk);
+    border-radius: 0 var(--r) var(--r) 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+.callout b { font-weight: 600; }
+.callout ol { margin: 8px 0 0; padding-left: 18px; }
+.callout li { margin-bottom: 4px; }
+
+@media (max-width: 1000px) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .right { position: static; }
+    .kinds { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 460px) {
+    .row { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+<style>
+:root { color-scheme: light dark; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+    <div>
+        <h1>Конструктор инапов</h1>
+        <p>Соберите шаблон, скопируйте код и вставьте его в конструктор Mindbox — разметку в поле HTML, стили в поле CSS.</p>
+    </div>
+    <button class="theme-btn" id="theme" type="button">Тема</button>
+</header>
+
+<div class="kinds" role="group" aria-label="Механика">
+    <button class="kind" type="button" data-kind="product" aria-pressed="true">
+        <span class="kind-n">01</span>
+        <span class="kind-t">Товар из поля клиента</span>
+        <span class="kind-d">Лот берётся из вычисляемого поля — интересующая позиция, любимый продукт. Два запроса: данные клиента, затем карточка лота.</span>
+    </button>
+    <button class="kind" type="button" data-kind="list" aria-pressed="false">
+        <span class="kind-n">02</span>
+        <span class="kind-t">Корзина и избранное</span>
+        <span class="kind-d">Карусель отложенных лотов из операций товарных списков. С промокодом или без.</span>
+    </button>
+    <button class="kind" type="button" data-kind="promo" aria-pressed="false">
+        <span class="kind-n">03</span>
+        <span class="kind-t">Информационный</span>
+        <span class="kind-d">Текст и промокод, без запросов к Mindbox. Четыре варианта показа.</span>
+    </button>
+</div>
+
+<div class="grid">
+
+    <!-- ───────── Настройки ───────── -->
+    <form class="controls" id="form" autocomplete="off">
+
+        <fieldset>
+            <legend>Показ и оформление</legend>
+            <div class="field">
+                <label for="layout">Как показывать</label>
+                <select id="layout">
+                    <option value="sheet">Шторка снизу</option>
+                    <option value="modal">Окно по центру</option>
+                    <option value="full">На весь экран</option>
+                    <option value="banner">Баннер сверху</option>
+                </select>
+                <span class="hint" id="layout-hint"></span>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="c-ink">Цвет текста</label>
+                    <input type="color" id="c-ink" value="#0E0E0E">
+                </div>
+                <div class="field">
+                    <label for="c-bg">Цвет фона</label>
+                    <input type="color" id="c-bg" value="#FFFFFF">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="c-btn">Цвет кнопки</label>
+                    <input type="color" id="c-btn" value="#0E0E0E">
+                </div>
+                <div class="field">
+                    <label for="c-btn-text">Текст кнопки</label>
+                    <input type="color" id="c-btn-text" value="#FFFFFF">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="font">Шрифт</label>
+                    <select id="font">
+                        <option value="Inter">Inter</option>
+                        <option value="Manrope">Manrope</option>
+                        <option value="Golos Text">Golos Text</option>
+                        <option value="Onest">Onest</option>
+                        <option value="">Системный</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="radius">Скругление, px</label>
+                    <input type="number" id="radius" value="2" min="0" max="28" step="1">
+                </div>
+            </div>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="caps" checked> Кнопки капслоком</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Тексты</legend>
+            <div class="field">
+                <label for="t-eyebrow">Надзаголовок</label>
+                <input type="text" id="t-eyebrow" value="Можно торговаться">
+            </div>
+            <div class="field">
+                <label for="t-title">Заголовок</label>
+                <textarea id="t-title">Предложите свою цену</textarea>
+            </div>
+            <div class="field">
+                <label for="t-lead">Описание</label>
+                <textarea id="t-lead">Вы возвращаетесь к этому лоту. Продавец готов обсуждать цену — отправьте предложение, он ответит в течение суток.</textarea>
+            </div>
+            <div class="field" data-for="product list">
+                <label for="t-note">Сноска под карточкой</label>
+                <textarea id="t-note">Лот в единственном экземпляре. Пока идут торги, вещь остаётся доступной другим покупателям.</textarea>
+                <span class="hint">Оставьте пустым, чтобы убрать блок.</span>
+            </div>
+            <div class="field" data-for="promo">
+                <label for="t-fine">Мелкий шрифт</label>
+                <input type="text" id="t-fine" value="Одноразовый, не суммируется с другими скидками">
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="t-cta">Кнопка действия</label>
+                    <input type="text" id="t-cta" value="Начать торги">
+                </div>
+                <div class="field">
+                    <label for="t-skip">Кнопка отказа</label>
+                    <input type="text" id="t-skip" value="Не сейчас">
+                    <span class="hint">Пусто — кнопки не будет.</span>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="list promo">
+            <legend>Промокод</legend>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="promo-on"> Показывать блок промокода</label>
+                <span class="hint">Копирование сделано на JS: атрибут SDK закрывает инап при нажатии, и человек теряет инструкцию из виду.</span>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="promo-code">Промокод</label>
+                    <input type="text" id="promo-code" value="HURRYUP">
+                </div>
+                <div class="field">
+                    <label for="promo-label">Подпись над кодом</label>
+                    <input type="text" id="promo-label" value="Промокод">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="promo-hint">Надпись справа</label>
+                    <input type="text" id="promo-hint" value="Скопировать">
+                </div>
+                <div class="field">
+                    <label for="promo-done">После нажатия</label>
+                    <input type="text" id="promo-done" value="Скопировано">
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="product">
+            <legend>Откуда берётся лот</legend>
+            <div class="field">
+                <label for="p-field">Поле клиента с id лота</label>
+                <select id="p-field">
+                    <option value="interestedItem">interestedItem — интересующая позиция</option>
+                    <option value="favProduct">favProduct — любимый продукт</option>
+                    <option value="prosmatrivaemyjprodukt">prosmatrivaemyjprodukt — просматриваемая категория</option>
+                    <option value="__custom">Другое поле…</option>
+                </select>
+            </div>
+            <div class="field" id="p-field-custom-wrap" hidden>
+                <label for="p-field-custom">Системное имя поля</label>
+                <input type="text" id="p-field-custom" value="">
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="p-op-client">Операция с данными клиента</label>
+                    <input type="text" id="p-op-client" value="GetClientPublicData">
+                </div>
+                <div class="field">
+                    <label for="p-op-product">Операция с карточкой лота</label>
+                    <input type="text" id="p-op-product" value="GetProductInfo">
+                </div>
+            </div>
+            <div class="field">
+                <label for="p-link-mode">Куда ведёт кнопка</label>
+                <select id="p-link-mode">
+                    <option value="productUrl">На адрес из поля url товара</option>
+                    <option value="deeplink">Собрать диплинк по шаблону</option>
+                </select>
+            </div>
+            <div class="field" id="p-deeplink-wrap" hidden>
+                <label for="p-deeplink">Шаблон диплинка</label>
+                <input type="text" id="p-deeplink" value="oskelly://lot/{id}">
+                <span class="hint">{id} заменится на id лота.</span>
+            </div>
+            <div class="field">
+                <label for="p-fallback">Запасной адрес</label>
+                <input type="text" id="p-fallback" value="oskelly://favorites">
+                <span class="hint">Куда вести, если лот не подгрузился. Карточка при этом скроется.</span>
+            </div>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="p-brand" checked> Показывать бренд</label>
+                <label class="check"><input type="checkbox" id="p-price" checked> Показывать цену</label>
+                <label class="check"><input type="checkbox" id="p-avail" checked> Прятать проданные лоты</label>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="list">
+            <legend>Источник товаров</legend>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="l-cart" checked> Корзина — GetInapProductList</label>
+                <label class="check"><input type="checkbox" id="l-fav" checked> Избранное — GetInapProductListFav</label>
+                <span class="hint">Списки склеиваются, дубли убираются по id лота.</span>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="l-max">Сколько карточек</label>
+                    <input type="number" id="l-max" value="8" min="1" max="20">
+                </div>
+                <div class="field">
+                    <label for="l-link">Адрес кнопки</label>
+                    <input type="text" id="l-link" value="oskelly://favorites">
+                </div>
+            </div>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="l-brand" checked> Бренд над названием</label>
+                <label class="check"><input type="checkbox" id="l-old" checked> Зачёркнутая старая цена</label>
+                <label class="check"><input type="checkbox" id="l-avail" checked> Прятать проданные лоты</label>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="promo">
+            <legend>Действие кнопки</legend>
+            <div class="field">
+                <label for="pr-action">Что делает кнопка</label>
+                <select id="pr-action">
+                    <option value="close">Закрывает инап</option>
+                    <option value="follow">Ведёт по ссылке</option>
+                </select>
+            </div>
+            <div class="field" id="pr-url-wrap" hidden>
+                <label for="pr-url">Адрес перехода</label>
+                <input type="text" id="pr-url" value="oskelly://cart">
+            </div>
+        </fieldset>
+
+        <fieldset data-for="product list">
+            <legend>Фильтр по брендам</legend>
+            <div class="field">
+                <label for="brands">Бренды акции</label>
+                <textarea id="brands" placeholder="Chanel, Fendi, Karl Lagerfeld"></textarea>
+                <span class="hint">Через запятую. Пусто — показываются любые бренды. Регистр, пробелы и дефисы не важны.</span>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="product list">
+            <legend>Подключение</legend>
+            <div class="row">
+                <div class="field">
+                    <label for="endpoint">endpointId</label>
+                    <input type="text" id="endpoint" value="oskelly-ios">
+                    <span class="hint">У Android своя точка входа.</span>
+                </div>
+                <div class="field">
+                    <label for="origin">originDomain</label>
+                    <input type="text" id="origin" value="oskelly.ru">
+                </div>
+            </div>
+        </fieldset>
+
+    </form>
+
+    <!-- ───────── Превью и код ───────── -->
+    <div class="right">
+
+        <div class="phone-head">
+            <h2>Превью</h2>
+            <span>без JS — как в конструкторе</span>
+        </div>
+        <div class="phone">
+            <iframe id="preview" title="Превью инапа" sandbox=""></iframe>
+        </div>
+
+        <div class="tabs">
+            <button class="tab" type="button" data-tab="html" aria-pressed="true">Вставить в HTML</button>
+            <button class="tab" type="button" data-tab="css" aria-pressed="false">Вставить в CSS</button>
+            <button class="copy" type="button" id="copy">Скопировать</button>
+        </div>
+        <p class="code-note" id="code-note"></p>
+        <pre class="code" id="out"></pre>
+
+        <div class="callout">
+            <b>Порядок сборки</b>
+            <ol>
+                <li>Скопируйте разметку и вставьте в поле HTML конструктора Mindbox.</li>
+                <li>Переключитесь на вкладку CSS, скопируйте и вставьте в поле CSS.</li>
+                <li>Настройте показ: сегмент клиентов, а для акций по списку товаров — экран продукта плюс сегмент товаров.</li>
+                <li>Проверьте на тестовой группе: карточка подгрузилась, промокод копируется, инап при копировании не закрывается.</li>
+            </ol>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+    var kind = 'product';
+    var tab = 'html';
+
+    var LAYOUT_HINT = {
+        sheet:  'Не перекрывает экран целиком — подходит, когда человек уже смотрит товар.',
+        modal:  'Требует внимания. Для одного решения: промокод, выбор, подтверждение.',
+        full:   'Максимум внимания. Для больших промо и онбординга. Оверлея нет.',
+        banner: 'Не блокирует работу с приложением. Для мягкого напоминания.'
+    };
+
+    function val(id) { var el = $(id); return el ? (el.value || '').trim() : ''; }
+    function on(id)  { var el = $(id); return el ? el.checked : false; }
+
+    function state() {
+        var pf = val('p-field');
+        if (pf === '__custom') pf = val('p-field-custom') || 'interestedItem';
+
+        var ops = [];
+        if (on('l-cart')) ops.push('GetInapProductList');
+        if (on('l-fav'))  ops.push('GetInapProductListFav');
+
+        return {
+            kind: kind,
+            layout: val('layout'),
+            ink: val('c-ink'), bg: val('c-bg'),
+            btn: val('c-btn'), btnText: val('c-btn-text'),
+            font: val('font'), radius: parseInt(val('radius'), 10) || 0,
+            caps: on('caps'),
+
+            eyebrow: val('t-eyebrow'), title: val('t-title'), lead: val('t-lead'),
+            note: val('t-note'), fine: val('t-fine'),
+            cta: val('t-cta'), skip: val('t-skip'),
+
+            promoOn: on('promo-on'), code: val('promo-code'),
+            codeLabel: val('promo-label'), codeHint: val('promo-hint'), codeDone: val('promo-done'),
+
+            pField: pf, pOpClient: val('p-op-client'), pOpProduct: val('p-op-product'),
+            pLinkMode: val('p-link-mode'), pDeeplink: val('p-deeplink'), pFallback: val('p-fallback'),
+            pBrand: on('p-brand'), pPrice: on('p-price'), pAvail: on('p-avail'),
+
+            lOps: ops, lMax: parseInt(val('l-max'), 10) || 8, lLink: val('l-link'),
+            lBrand: on('l-brand'), lOld: on('l-old'), lAvail: on('l-avail'),
+
+            prAction: val('pr-action'), prUrl: val('pr-url'),
+
+            brands: val('brands').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
+            endpoint: val('endpoint'), origin: val('origin')
+        };
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function js(s) { return JSON.stringify(String(s == null ? '' : s)); }
+    function fontStack(f) {
+        return f ? "'" + f + "', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif"
+                 : "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+    }
+
+    /* ── CSS ──────────────────────────────────────────── */
+    function buildCSS(s) {
+        var r = s.radius, css = [];
+
+        if (s.font) css.push("@import url('https://fonts.googleapis.com/css2?family=" +
+            s.font.replace(/ /g, '+') + ":wght@400;500;600&display=swap');", '');
+
+        css.push('#popmechanic-form {');
+        if (s.layout === 'full') css.push('    position: absolute;', '    top: 0; right: 0; bottom: 0; left: 0;');
+        css.push('    font-family: ' + fontStack(s.font) + ';',
+                 '    color: ' + s.ink + ';',
+                 '    -webkit-font-smoothing: antialiased;', '}',
+                 '#popmechanic-form * { box-sizing: border-box; }', '');
+
+        if (s.layout === 'sheet' || s.layout === 'modal') {
+            css.push('#popmechanic-form .popmechanic-overlay {',
+                '    position: absolute;',
+                '    top: 0; right: 0; bottom: 0; left: 0;',
+                '    z-index: 1;',
+                '    background: rgba(0, 0, 0, ' + (s.layout === 'modal' ? '0.5' : '0.4') + ');',
+                '    animation: pm-fade-in 0.3s ease-out both;', '}', '');
+        }
+
+        css.push('#popmechanic-form .popmechanic-main {', '    position: absolute;', '    z-index: 2;');
+        if (s.layout === 'sheet') {
+            css.push('    left: 0; right: 0; bottom: 0;',
+                '    max-height: calc(100% - 16px);',
+                '    overflow-y: auto;',
+                '    -webkit-overflow-scrolling: touch;',
+                '    padding: 28px 24px 20px;',
+                '    padding-bottom: calc(env(safe-area-inset-bottom) + 20px);',
+                '    border-radius: ' + (r + 2) + 'px ' + (r + 2) + 'px 0 0;',
+                '    background: ' + s.bg + ';',
+                '    animation: pm-slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;');
+        } else if (s.layout === 'modal') {
+            css.push('    top: 50%; left: 50%;',
+                '    transform: translate(-50%, -50%);',
+                '    width: calc(100% - 32px);',
+                '    max-width: 360px;',
+                '    max-height: calc(100% - 32px);',
+                '    overflow-y: auto; overflow-x: hidden;',
+                '    -webkit-overflow-scrolling: touch;',
+                '    padding: 28px 24px 24px;',
+                '    border-radius: ' + r + 'px;',
+                '    background: ' + s.bg + ';',
+                '    animation: pm-pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;');
+        } else if (s.layout === 'full') {
+            css.push('    top: 0; right: 0; bottom: 0; left: 0;',
+                '    display: flex; flex-direction: column;',
+                '    overflow-y: auto;',
+                '    -webkit-overflow-scrolling: touch;',
+                '    padding: calc(env(safe-area-inset-top) + 56px) 24px calc(env(safe-area-inset-bottom) + 24px);',
+                '    background: ' + s.bg + ';',
+                '    animation: pm-fade-in 0.4s ease-out both;');
+        } else {
+            css.push('    top: 0; left: 0; right: 0;',
+                '    padding: calc(env(safe-area-inset-top) + 18px) 20px 18px;',
+                '    border-radius: 0 0 ' + r + 'px ' + r + 'px;',
+                '    background: ' + s.bg + ';',
+                '    animation: pm-slide-down 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;');
+        }
+        css.push('}', '');
+
+        css.push('#popmechanic-form .pm-close {', '    position: absolute;');
+        css.push(s.layout === 'full'
+            ? '    top: calc(env(safe-area-inset-top) + 12px);'
+            : '    top: 8px;');
+        css.push('    right: 8px;',
+            '    width: 36px; height: 36px;',
+            '    display: flex; align-items: center; justify-content: center;',
+            '    padding: 0; border: none; background: transparent;',
+            '    font-family: inherit; font-size: 24px; line-height: 1;',
+            '    color: ' + s.ink + '66;',
+            '    cursor: pointer;', '}', '');
+
+        css.push('#popmechanic-form .pm-eyebrow {',
+            '    font-size: 11px; font-weight: 500;',
+            '    letter-spacing: 0.16em; text-transform: uppercase;',
+            '    color: ' + s.ink + '8A;',
+            '    margin-bottom: 12px;', '}',
+            '#popmechanic-form .pm-title {',
+            '    font-size: ' + (s.layout === 'full' ? '30' : s.layout === 'banner' ? '17' : '23') + 'px;',
+            '    font-weight: 500; line-height: 1.2;',
+            '    letter-spacing: -0.015em;',
+            '    margin: 0 0 10px;', '}',
+            '#popmechanic-form .pm-lead {',
+            '    font-size: 14px; line-height: 1.5;',
+            '    color: ' + s.ink + 'A6;',
+            '    margin: 0 0 20px;', '}', '');
+
+        if (s.kind === 'product') {
+            css.push('#popmechanic-form .pm-lot {',
+                '    display: flex; align-items: center; gap: 14px;',
+                '    padding: 14px; margin-bottom: 20px;',
+                '    border: 1px solid ' + s.ink + '1F;',
+                '    border-radius: ' + r + 'px;',
+                '    transition: opacity 0.25s ease-out;', '}',
+                '#popmechanic-form .pm-lot-img {',
+                '    flex: 0 0 auto; width: 52px; height: 66px;',
+                '    object-fit: cover; background: ' + s.ink + '0D;', '}',
+                '#popmechanic-form .pm-lot-text { min-width: 0; flex: 1 1 auto; }',
+                '#popmechanic-form .pm-lot-brand {',
+                '    font-size: 13px; font-weight: 600;',
+                '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', '}',
+                '#popmechanic-form .pm-lot-name {',
+                '    font-size: 13px; margin-top: 2px;',
+                '    color: ' + s.ink + '8A;',
+                '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', '}',
+                '#popmechanic-form .pm-lot-price {',
+                '    flex: 0 0 auto; font-size: 14px; font-weight: 600;', '}', '');
+        }
+
+        if (s.kind === 'list') {
+            var pad = (s.layout === 'banner') ? 20 : 24;
+            css.push('#popmechanic-form .pm-rail {',
+                '    display: flex; gap: 10px;',
+                '    margin: 0 -' + pad + 'px 20px; padding: 0 ' + pad + 'px 4px;',
+                '    overflow-x: auto;',
+                '    -webkit-overflow-scrolling: touch;', '}',
+                '#popmechanic-form .pm-card {',
+                '    flex: 0 0 auto; width: 116px;',
+                '    border: 1px solid ' + s.ink + '1F;',
+                '    border-radius: ' + r + 'px;',
+                '    overflow: hidden; cursor: pointer;', '}',
+                '#popmechanic-form .pm-card-img {',
+                '    width: 100%; height: 140px;',
+                '    background: ' + s.ink + '0D center / cover no-repeat;', '}',
+                '#popmechanic-form .pm-card-info { padding: 9px 10px 11px; }',
+                '#popmechanic-form .pm-card-brand {',
+                '    font-size: 10px; font-weight: 600;',
+                '    letter-spacing: 0.08em; text-transform: uppercase;',
+                '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', '}',
+                '#popmechanic-form .pm-card-name {',
+                '    font-size: 11.5px; margin-top: 2px;',
+                '    color: ' + s.ink + '8A;',
+                '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', '}',
+                '#popmechanic-form .pm-card-price {',
+                '    font-size: 12px; font-weight: 600; margin-top: 6px;', '}',
+                '#popmechanic-form .pm-card-price-old {',
+                '    display: block; font-size: 11px; margin-top: 1px;',
+                '    color: ' + s.ink + '66; text-decoration: line-through;', '}', '');
+        }
+
+        if (s.promoOn && (s.kind === 'list' || s.kind === 'promo')) {
+            css.push('#popmechanic-form .pm-code {',
+                '    width: 100%; display: flex;',
+                '    align-items: center; justify-content: space-between; gap: 12px;',
+                '    padding: 16px 18px; margin-bottom: 20px;',
+                '    border: 1px solid ' + s.ink + '1F;',
+                '    border-radius: ' + r + 'px;',
+                '    background: ' + s.ink + '08;',
+                '    font-family: inherit; text-align: left; cursor: pointer;', '}',
+                '#popmechanic-form .pm-code-label {',
+                '    display: block; font-size: 11px; font-weight: 500;',
+                '    letter-spacing: 0.14em; text-transform: uppercase;',
+                '    color: ' + s.ink + '8A; margin-bottom: 5px;', '}',
+                '#popmechanic-form .pm-code-value {',
+                '    font-size: 18px; font-weight: 600; letter-spacing: 0.12em;',
+                '    color: ' + s.ink + ';', '}',
+                '#popmechanic-form .pm-code-hint {',
+                '    flex: 0 0 auto; font-size: 11px; font-weight: 500;',
+                '    letter-spacing: 0.12em; text-transform: uppercase;',
+                '    color: ' + s.ink + '8A;', '}',
+                '#popmechanic-form .pm-code.is-copied .pm-code-hint { color: ' + s.ink + '; }', '');
+        }
+
+        if (s.note && (s.kind === 'product' || s.kind === 'list')) {
+            css.push('#popmechanic-form .pm-note {',
+                '    display: flex; gap: 10px;',
+                '    padding: 14px 16px; margin-bottom: 20px;',
+                '    background: ' + s.ink + '08;',
+                '    border-radius: ' + r + 'px;',
+                '    font-size: 12px; line-height: 1.5;',
+                '    color: ' + s.ink + 'A6;', '}',
+                '#popmechanic-form .pm-note-mark {',
+                '    flex: 0 0 auto; font-weight: 600; color: ' + s.ink + ';', '}', '');
+        }
+
+        if (s.fine && s.kind === 'promo') {
+            css.push('#popmechanic-form .pm-fine {',
+                '    margin: 14px 0 0; text-align: center;',
+                '    font-size: 11px; line-height: 1.45;',
+                '    color: ' + s.ink + '66;', '}', '');
+        }
+
+        css.push('#popmechanic-form .pm-actions {',
+            '    display: flex; flex-direction: column; gap: 8px;');
+        if (s.layout === 'full') css.push('    margin-top: auto; padding-top: 12px;');
+        css.push('}',
+            '#popmechanic-form .pm-btn {',
+            '    width: 100%; padding: 17px 16px;',
+            '    border: none;',
+            '    border-radius: ' + r + 'px;',
+            '    font-family: inherit; font-size: 14px; font-weight: 600;',
+            '    letter-spacing: ' + (s.caps ? '0.06em' : '0.01em') + ';',
+            '    text-transform: ' + (s.caps ? 'uppercase' : 'none') + ';',
+            '    cursor: pointer;', '}',
+            '#popmechanic-form .pm-btn--primary {',
+            '    background: ' + s.btn + '; color: ' + s.btnText + ';', '}',
+            '#popmechanic-form .pm-btn--ghost {',
+            '    background: transparent;',
+            '    color: ' + s.ink + '8A;',
+            '    font-weight: 500; letter-spacing: 0.04em; text-transform: none;', '}', '');
+
+        if (s.layout === 'sheet') css.push('@keyframes pm-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }');
+        if (s.layout === 'banner') css.push('@keyframes pm-slide-down { from { transform: translateY(-100%); } to { transform: translateY(0); } }');
+        if (s.layout === 'modal') css.push('@keyframes pm-pop-in {',
+            '    from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }',
+            '    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }', '}');
+        css.push('@keyframes pm-fade-in { from { opacity: 0; } to { opacity: 1; } }', '');
+
+        css.push('@media (max-width: 360px) {',
+            '    #popmechanic-form .pm-title { font-size: ' + (s.layout === 'full' ? '26' : s.layout === 'banner' ? '16' : '21') + 'px; }',
+            '    #popmechanic-form .pm-lead { font-size: 13px; }', '}', '');
+
+        css.push('@media (prefers-reduced-motion: reduce) {',
+            '    #popmechanic-form .popmechanic-main,',
+            '    #popmechanic-form .popmechanic-overlay { animation: none; }');
+        if (s.kind === 'product') css.push('    #popmechanic-form .pm-lot { transition: none; }');
+        css.push('}');
+
+        return css.join('\n');
+    }
+
+    /* ── HTML ─────────────────────────────────────────── */
+    function buildHTML(s) {
+        var h = [], sc = [];
+        var hasOverlay = (s.layout === 'sheet' || s.layout === 'modal');
+
+        h.push('<!-- Oskelly · ' + (
+            s.kind === 'product' ? 'лот из поля ' + s.pField :
+            s.kind === 'list'    ? 'корзина и избранное' : 'информационный инап'
+        ) + ' -->');
+        h.push('<div class="popmechanic-reset" id="popmechanic-form">');
+        if (hasOverlay) h.push('    <div class="popmechanic-overlay" data-popmechanic-close></div>');
+        h.push('');
+        h.push('    <div class="popmechanic-main">');
+        h.push('        <button class="pm-close" type="button" aria-label="Закрыть" data-popmechanic-close>&times;</button>');
+        h.push('');
+
+        if (s.eyebrow) h.push('        <div class="pm-eyebrow">' + esc(s.eyebrow) + '</div>');
+        if (s.title)   h.push('        <h2 class="pm-title">' + esc(s.title) + '</h2>');
+        if (s.lead)    h.push('        <p class="pm-lead">' + esc(s.lead) + '</p>');
+        h.push('');
+
+        if (s.kind === 'product') {
+            h.push('        <!-- Значения ниже — заглушка для превью, движок подставит реальный лот -->');
+            h.push('        <div class="pm-lot" id="pm-lot">');
+            h.push('            <img class="pm-lot-img" id="pm-lot-img" alt="">');
+            h.push('            <div class="pm-lot-text">');
+            if (s.pBrand) h.push('                <div class="pm-lot-brand" id="pm-lot-brand">Chanel</div>');
+            h.push('                <div class="pm-lot-name" id="pm-lot-name">Жакет из твида</div>');
+            h.push('            </div>');
+            if (s.pPrice) h.push('            <div class="pm-lot-price" id="pm-lot-price">205 000 &#8381;</div>');
+            h.push('        </div>');
+            h.push('');
+        }
+
+        if (s.kind === 'list') {
+            h.push('        <!-- Карточки ниже — заглушка для превью, движок заменит их лотами клиента -->');
+            h.push('        <div class="pm-rail" id="pm-rail">');
+            for (var i = 0; i < 3; i++) {
+                h.push('            <div class="pm-card">');
+                h.push('                <div class="pm-card-img"></div>');
+                h.push('                <div class="pm-card-info">');
+                if (s.lBrand) h.push('                    <div class="pm-card-brand">Chanel</div>');
+                h.push('                    <div class="pm-card-name">Жакет из твида</div>');
+                h.push('                    <div class="pm-card-price">205 000 &#8381;');
+                if (s.lOld) h.push('                        <span class="pm-card-price-old">240 000 &#8381;</span>');
+                h.push('                    </div>');
+                h.push('                </div>');
+                h.push('            </div>');
+            }
+            h.push('        </div>');
+            h.push('');
+        }
+
+        if (s.promoOn && (s.kind === 'list' || s.kind === 'promo')) {
+            h.push('        <button type="button" class="pm-code" id="pm-copy" data-copied-text="' + esc(s.codeDone) + '">');
+            h.push('            <span>');
+            if (s.codeLabel) h.push('                <span class="pm-code-label">' + esc(s.codeLabel) + '</span>');
+            h.push('                <span class="pm-code-value" id="pm-promo-code">' + esc(s.code) + '</span>');
+            h.push('            </span>');
+            h.push('            <span class="pm-code-hint" id="pm-copy-hint">' + esc(s.codeHint) + '</span>');
+            h.push('        </button>');
+            h.push('');
+        }
+
+        if (s.note && (s.kind === 'product' || s.kind === 'list')) {
+            h.push('        <div class="pm-note">');
+            h.push('            <span class="pm-note-mark">&mdash;</span>');
+            h.push('            <span>' + esc(s.note) + '</span>');
+            h.push('        </div>');
+            h.push('');
+        }
+
+        h.push('        <div class="pm-actions">');
+        if (s.cta) {
+            if (s.kind === 'product') {
+                h.push('            <button class="pm-btn pm-btn--primary" type="button" id="pm-cta"');
+                h.push('                    data-popmechanic-inapp-follow="' + esc(s.pFallback) + '">' + esc(s.cta) + '</button>');
+            } else if (s.kind === 'list') {
+                h.push('            <button class="pm-btn pm-btn--primary" type="button"');
+                h.push('                    data-popmechanic-inapp-follow="' + esc(s.lLink) + '">' + esc(s.cta) + '</button>');
+            } else if (s.prAction === 'follow') {
+                h.push('            <button class="pm-btn pm-btn--primary" type="button"');
+                h.push('                    data-popmechanic-inapp-follow="' + esc(s.prUrl) + '">' + esc(s.cta) + '</button>');
+            } else {
+                h.push('            <button class="pm-btn pm-btn--primary" type="button" data-popmechanic-close>' + esc(s.cta) + '</button>');
+            }
+        }
+        if (s.skip) h.push('            <button class="pm-btn pm-btn--ghost" type="button" data-popmechanic-close>' + esc(s.skip) + '</button>');
+        h.push('        </div>');
+
+        if (s.fine && s.kind === 'promo') h.push('        <p class="pm-fine">' + esc(s.fine) + '</p>');
+
+        h.push('    </div>');
+        h.push('</div>');
+
+        if (s.promoOn && (s.kind === 'list' || s.kind === 'promo')) sc.push(copyScript());
+        if (s.kind === 'product') sc.push(productScript(s));
+        if (s.kind === 'list')    sc.push(listScript(s));
+
+        if (sc.length) h.push('', '<' + 'script>', sc.join('\n\n'), '<' + '/script>');
+        return h.join('\n');
+    }
+
+    function copyScript() {
+        return [
+'/* Копирование промокода. Через JS, а не data-popmechanic-inapp-copy:',
+'   атрибут SDK закрывает инап при нажатии. Код берётся из разметки —',
+'   копируется ровно то, что видит клиент. */',
+'(function () {',
+'    var btn = document.getElementById("pm-copy");',
+'    var hint = document.getElementById("pm-copy-hint");',
+'    var node = document.getElementById("pm-promo-code");',
+'    if (!btn || !hint || !node) return;',
+'',
+'    btn.addEventListener("click", function () {',
+'        var code = (node.textContent || "").trim();',
+'        if (!code) return;',
+'        var was = hint.textContent;',
+'        var done = btn.getAttribute("data-copied-text") || "Скопировано";',
+'',
+'        var finish = function () {',
+'            btn.classList.add("is-copied");',
+'            hint.textContent = done;',
+'            setTimeout(function () {',
+'                btn.classList.remove("is-copied");',
+'                hint.textContent = was;',
+'            }, 1600);',
+'        };',
+'        var legacy = function () {',
+'            try {',
+'                var ta = document.createElement("textarea");',
+'                ta.value = code;',
+'                ta.setAttribute("readonly", "");',
+'                ta.style.position = "fixed";',
+'                ta.style.top = "-1000px";',
+'                ta.style.opacity = "0";',
+'                document.body.appendChild(ta);',
+'                ta.focus(); ta.select();',
+'                ta.setSelectionRange(0, code.length);',
+'                document.execCommand("copy");',
+'                document.body.removeChild(ta);',
+'            } catch (e) {}',
+'        };',
+'',
+'        try {',
+'            if (navigator.clipboard && navigator.clipboard.writeText) {',
+'                navigator.clipboard.writeText(code).then(finish, function () { legacy(); finish(); });',
+'                return;',
+'            }',
+'        } catch (e) {}',
+'        legacy(); finish();',
+'    });',
+'})();'].join('\n');
+    }
+
+    function apiHelpers(s) {
+        return [
+'    var ENDPOINT = ' + js(s.endpoint) + ';',
+'    var ORIGIN   = ' + js(s.origin) + ';',
+'    var API      = "https://api.mindbox.ru/v3/js/operations/sync";',
+'',
+'    function cookie(name) {',
+'        var m = document.cookie.match(new RegExp("(?:^|;\\\\s*)" + name + "=([^;]+)"));',
+'        return m && m[1] ? decodeURIComponent(m[1]) : "";',
+'    }',
+'    function deviceUUID() {',
+'        return cookie("mindboxDeviceUUID") || cookie("deviceUUID") || cookie("directCrm-deviceUUID") || "";',
+'    }',
+'    function call(operation, data) {',
+'        var tz = "Europe/Moscow";',
+'        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}',
+'        var url = API + "?operation=" + encodeURIComponent(operation)',
+'                + "&endpointId=" + encodeURIComponent(ENDPOINT)',
+'                + "&originDomain=" + encodeURIComponent(ORIGIN);',
+'        var body = new URLSearchParams({',
+'            originDomain: ORIGIN, deviceUUID: deviceUUID(), operation: operation,',
+'            ianaTimeZone: tz, endpointId: ENDPOINT, data: JSON.stringify(data || {})',
+'        });',
+'        return fetch(url, {',
+'            method: "POST",',
+'            headers: { "Content-Type": "application/x-www-form-urlencoded" },',
+'            body: body',
+'        }).then(function (r) {',
+'            if (!r.ok) throw new Error("HTTP " + r.status);',
+'            return r.json();',
+'        }).then(function (res) {',
+'            if (!res || res.status !== "Success") throw new Error((res && res.status) || "no response");',
+'            return res;',
+'        });',
+'    }',
+'',
+'    function money(p) {',
+'        if (p === null || p === undefined || p === "") return "";',
+'        var n = parseFloat(String(p).replace(",", "."));',
+'        if (isNaN(n)) return String(p);',
+'        return Math.round(n).toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, " ") + " \\u20BD";',
+'    }',
+'    function safeUrl(u) { return u ? String(u).replace(/["\'<>\\\\]/g, "") : ""; }',
+'',
+'    var BRANDS = ' + JSON.stringify(s.brands.map(function (b) {
+        return b.toLowerCase().replace(/[\s\-_.]/g, '');
+    })) + ';',
+'    function normBrand(v) { return String(v || "").toLowerCase().replace(/[\\s\\-_.]/g, ""); }'
+        ].join('\n');
+    }
+
+    function productScript(s) {
+        return [
+'/* Лот из поля клиента: ' + s.pOpClient + ' -> ' + s.pField + ' -> ' + s.pOpProduct + ' */',
+'(function () {',
+apiHelpers(s),
+'',
+'    var box = document.getElementById("pm-lot");',
+'    var img = document.getElementById("pm-lot-img");',
+'    var brandEl = document.getElementById("pm-lot-brand");',
+'    var nameEl = document.getElementById("pm-lot-name");',
+'    var priceEl = document.getElementById("pm-lot-price");',
+'    var cta = document.getElementById("pm-cta");',
+'',
+'    // Гасим заглушку, чтобы пример не мелькнул перед реальным лотом.',
+'    // В превью без JS строка не выполнится и карточка останется видимой.',
+'    if (box) box.style.opacity = "0";',
+'',
+'    function bail() {',
+'        if (box) box.style.display = "none";',
+'        if (cta) cta.setAttribute("data-popmechanic-inapp-follow", ' + js(s.pFallback) + ');',
+'    }',
+'    function brandOf(p) {',
+'        if (p.manufacturer && p.manufacturer.name) return String(p.manufacturer.name);',
+'        if (p.customFields && p.customFields.vendor) return String(p.customFields.vendor);',
+'        return "";',
+'    }',
+'    function fits(p) {',
+'        if (!p) return false;',
+(s.pAvail
+? '        if (p.isAvailable === false || p.isAvailable === "false") return false;'
+: '        // проданные лоты показываем'),
+'        if (!BRANDS.length) return true;',
+'        return BRANDS.indexOf(normBrand(brandOf(p))) !== -1;',
+'    }',
+'',
+'    var productId = null;',
+'',
+'    call(' + js(s.pOpClient) + ', {})',
+'        .then(function (res) {',
+'            var customer = res.customer || {};',
+'            var cf = customer.customFields || {};',
+'            productId = cf[' + js(s.pField) + '];',
+'            if (!productId) throw new Error("пустое поле");',
+'            productId = String(productId);',
+'            var area = customer.area && customer.area.ids && customer.area.ids.externalId;',
+'            var payload = { product: { ids: { oskellyProducts: productId } } };',
+'            if (area) payload.area = { ids: { externalId: String(area) } };',
+'            return call(' + js(s.pOpProduct) + ', payload);',
+'        })',
+'        .then(function (res) {',
+'            var p = res.product;',
+'            if (!p || !fits(p)) throw new Error("лот не подошёл");',
+(s.pLinkMode === 'deeplink'
+? '            var link = ' + js(s.pDeeplink) + '.replace("{id}", encodeURIComponent(productId));'
+: '            var link = p.url || "";'),
+'            if (!link) throw new Error("нет ссылки на лот");',
+'',
+'            if (img && p.pictureUrl) img.setAttribute("src", safeUrl(p.pictureUrl));',
+(s.pBrand
+? '            if (brandEl) brandEl.textContent = brandOf(p);'
+: '            // бренд скрыт настройкой'),
+'            if (nameEl) nameEl.textContent = p.name || "";',
+(s.pPrice
+? '            if (priceEl) priceEl.textContent = money(p.price);'
+: '            // цена скрыта настройкой'),
+'            if (cta) cta.setAttribute("data-popmechanic-inapp-follow", link);',
+'            if (box) box.style.opacity = "1";',
+'        })',
+'        .catch(bail);',
+'})();'].join('\n');
+    }
+
+    function listScript(s) {
+        return [
+'/* Карусель лотов: ' + (s.lOps.join(' + ') || 'операции не выбраны') + ' */',
+'(function () {',
+apiHelpers(s),
+'',
+'    var OPERATIONS = ' + JSON.stringify(s.lOps) + ';',
+'    var MAX = ' + s.lMax + ';',
+'    var rail = document.getElementById("pm-rail");',
+'',
+'    function bail() { if (rail) rail.style.display = "none"; }',
+'    if (!OPERATIONS.length || !rail) { bail(); return; }',
+'',
+'    function brandOf(p) {',
+'        if (p.manufacturer && p.manufacturer.name) return String(p.manufacturer.name);',
+'        if (p.customFields && p.customFields.vendor) return String(p.customFields.vendor);',
+'        return "";',
+'    }',
+'    function fits(p) {',
+'        if (!p) return false;',
+(s.lAvail
+? '        if (p.isAvailable === false || p.isAvailable === "false") return false;'
+: '        // проданные лоты показываем'),
+'        if (!BRANDS.length) return true;',
+'        return BRANDS.indexOf(normBrand(brandOf(p))) !== -1;',
+'    }',
+'',
+'    function cell(cls, text) {',
+'        var d = document.createElement("div");',
+'        d.className = cls;',
+'        d.textContent = text;',
+'        return d;',
+'    }',
+'',
+'    function render(items) {',
+'        rail.innerHTML = "";',
+'        items.forEach(function (item) {',
+'            var p = item.product;',
+'            var card = document.createElement("div");',
+'            card.className = "pm-card";',
+'            if (p.url) card.setAttribute("data-popmechanic-inapp-follow", safeUrl(p.url));',
+'',
+'            var pic = document.createElement("div");',
+'            pic.className = "pm-card-img";',
+'            if (p.pictureUrl) pic.style.backgroundImage = "url(\'" + safeUrl(p.pictureUrl) + "\')";',
+'            card.appendChild(pic);',
+'',
+'            var info = document.createElement("div");',
+'            info.className = "pm-card-info";',
+(s.lBrand
+? '            if (brandOf(p)) info.appendChild(cell("pm-card-brand", brandOf(p)));'
+: '            // бренд скрыт настройкой'),
+'            info.appendChild(cell("pm-card-name", p.name || ""));',
+'',
+'            var price = cell("pm-card-price", money(p.price));',
+(s.lOld
+? [
+'            var was = p.oldPrice || p.basePrice || (p.customFields && p.customFields.productFirstPrice);',
+'            var wasNum = parseFloat(String(was || "").replace(",", "."));',
+'            var nowNum = parseFloat(String(p.price || "").replace(",", "."));',
+'            if (!isNaN(wasNum) && !isNaN(nowNum) && wasNum > nowNum) {',
+'                var old = document.createElement("span");',
+'                old.className = "pm-card-price-old";',
+'                old.textContent = money(wasNum);',
+'                price.appendChild(old);',
+'            }'].join('\n')
+: '            // старая цена скрыта настройкой'),
+'            info.appendChild(price);',
+'',
+'            card.appendChild(info);',
+'            rail.appendChild(card);',
+'        });',
+'    }',
+'',
+'    Promise.all(OPERATIONS.map(function (op) {',
+'        return call(op, {}).then(function (res) { return res.productList || []; })',
+'                           .catch(function () { return []; });',
+'    })).then(function (lists) {',
+'        var seen = {}, out = [];',
+'        lists.forEach(function (list) {',
+'            list.forEach(function (item) {',
+'                if (!item || !item.product || !fits(item.product)) return;',
+'                var ids = item.product.ids || {};',
+'                var key = ids.oskellyProducts || ids.mindboxId || item.product.url || item.product.name;',
+'                if (!key || seen[key]) return;',
+'                seen[key] = true;',
+'                out.push(item);',
+'            });',
+'        });',
+'        out = out.slice(0, MAX);',
+'        if (!out.length) { bail(); return; }',
+'        render(out);',
+'    }).catch(bail);',
+'})();'].join('\n');
+    }
+
+    /* ── подсветка ────────────────────────────────────── */
+    function highlight(code, isCSS) {
+        var out = esc(code);
+        if (isCSS) {
+            out = out.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="c">$1</span>');
+            out = out.replace(/^(\s*)([-a-z]+)(\s*:)/gm, '$1<span class="a">$2</span>$3');
+        } else {
+            out = out.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="c">$1</span>');
+            out = out.replace(/(&lt;\/?)([a-zA-Z][\w-]*)/g, '$1<span class="t">$2</span>');
+            out = out.replace(/(\s)([a-zA-Z-]+)(=&quot;)/g, '$1<span class="a">$2</span>$3');
+        }
+        return out;
+    }
+
+    /* ── отрисовка ────────────────────────────────────── */
+    var cache = { html: '', css: '' };
+
+    function refresh() {
+        var s = state();
+        cache.css = buildCSS(s);
+        cache.html = buildHTML(s);
+
+        $('layout-hint').textContent = LAYOUT_HINT[s.layout] || '';
+
+        var code = tab === 'css' ? cache.css : cache.html;
+        $('out').innerHTML = highlight(code, tab === 'css');
+        $('code-note').textContent = tab === 'css'
+            ? 'Только стили. Строк: ' + cache.css.split('\n').length + '.'
+            : 'Разметка и скрипты — всё в поле HTML. Строк: ' + cache.html.split('\n').length + '.';
+
+        $('preview').srcdoc =
+            '<style>html,body{height:100%;margin:0;position:relative;overflow:hidden;' +
+            'background:#EDEAE6}</style><style>' + cache.css + '</style>' + cache.html;
+    }
+
+    function syncVisibility() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-for]'), function (el) {
+            el.hidden = el.getAttribute('data-for').split(' ').indexOf(kind) === -1;
+        });
+        $('p-field-custom-wrap').hidden = val('p-field') !== '__custom';
+        $('p-deeplink-wrap').hidden = val('p-link-mode') !== 'deeplink';
+        $('pr-url-wrap').hidden = val('pr-action') !== 'follow';
+    }
+
+    var PRESETS = {
+        product: {
+            layout: 'sheet',
+            't-eyebrow': 'Можно торговаться',
+            't-title': 'Предложите свою цену',
+            't-lead': 'Вы возвращаетесь к этому лоту. Продавец готов обсуждать цену — отправьте предложение, он ответит в течение суток.',
+            't-note': 'Лот в единственном экземпляре. Пока идут торги, вещь остаётся доступной другим покупателям.',
+            't-cta': 'Начать торги', 't-skip': 'Не сейчас', 'promo-on': false
+        },
+        list: {
+            layout: 'sheet',
+            't-eyebrow': 'Ваши отложенные лоты',
+            't-title': 'Скидка на то, что вы отложили',
+            't-lead': 'Промокод действует на лоты из вашего избранного и корзины. Каждый в единственном экземпляре.',
+            't-note': '',
+            't-cta': 'Перейти в избранное', 't-skip': 'Позже', 'promo-on': true
+        },
+        promo: {
+            layout: 'sheet',
+            't-eyebrow': 'Акция на этот лот',
+            't-title': 'Этот лот сейчас можно заказать со скидкой 10%',
+            't-lead': 'Примените промокод в корзине.',
+            't-fine': 'Одноразовый, не суммируется с другими скидками',
+            't-cta': 'Понятно', 't-skip': '', 'promo-on': true
+        }
+    };
+
+    function applyPreset(k) {
+        var p = PRESETS[k];
+        Object.keys(p).forEach(function (id) {
+            var el = $(id);
+            if (!el) return;
+            if (el.type === 'checkbox') el.checked = p[id];
+            else el.value = p[id];
+        });
+    }
+
+    /* ── события ──────────────────────────────────────── */
+    Array.prototype.forEach.call(document.querySelectorAll('.kind'), function (btn) {
+        btn.addEventListener('click', function () {
+            kind = btn.getAttribute('data-kind');
+            Array.prototype.forEach.call(document.querySelectorAll('.kind'), function (b) {
+                b.setAttribute('aria-pressed', String(b === btn));
+            });
+            applyPreset(kind);
+            syncVisibility();
+            refresh();
+        });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (btn) {
+        btn.addEventListener('click', function () {
+            tab = btn.getAttribute('data-tab');
+            Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+                b.setAttribute('aria-pressed', String(b === btn));
+            });
+            refresh();
+        });
+    });
+
+    $('form').addEventListener('input', function () { syncVisibility(); refresh(); });
+    $('form').addEventListener('change', function () { syncVisibility(); refresh(); });
+    $('form').addEventListener('submit', function (e) { e.preventDefault(); });
+
+    $('copy').addEventListener('click', function () {
+        var text = tab === 'css' ? cache.css : cache.html;
+        var btn = $('copy');
+        var finish = function () {
+            btn.classList.add('done');
+            btn.textContent = 'Скопировано';
+            setTimeout(function () { btn.classList.remove('done'); btn.textContent = 'Скопировать'; }, 1600);
+        };
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(finish, finish);
+                return;
+            }
+        } catch (e) {}
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        } catch (e) {}
+        finish();
+    });
+
+    $('theme').addEventListener('click', function () {
+        var now = document.documentElement.getAttribute('data-theme');
+        var next = now === 'dark' ? 'light' : now === 'light' ? 'dark'
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('oskelly-builder-theme', next); } catch (e) {}
+    });
+    try {
+        var saved = localStorage.getItem('oskelly-builder-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    } catch (e) {}
+
+    syncVisibility();
+    refresh();
+})();
+</script>
+
+</body>
+</html>
