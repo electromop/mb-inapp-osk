@@ -119,7 +119,7 @@ body {
 /* ── Выбор механики ────────────────────────────────────── */
 .kinds {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     margin-bottom: 26px;
 }
@@ -412,6 +412,11 @@ pre.code .c { color: var(--muted); font-style: italic; }
         <span class="kind-t">Опрос</span>
         <span class="kind-d">Несколько вопросов по шагам: варианты, да/нет, оценка. Каждый ответ пишется в поле клиента.</span>
     </button>
+    <button class="kind" type="button" data-kind="size" aria-pressed="false">
+        <span class="kind-n">05</span>
+        <span class="kind-t">Размер обуви</span>
+        <span class="kind-d">Окно в кремово-золотом стиле: сетка размеров, «Сохранить», экран благодарности. Пишет в ShoeSize.</span>
+    </button>
 </div>
 
 <div class="grid">
@@ -419,7 +424,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
     <!-- ───────── Настройки ───────── -->
     <form class="controls" id="form" autocomplete="off">
 
-        <fieldset>
+        <fieldset data-for="product list promo survey">
             <legend>Показ и оформление</legend>
             <div class="field">
                 <label for="layout">Как показывать</label>
@@ -645,7 +650,44 @@ pre.code .c { color: var(--muted); font-style: italic; }
             </div>
         </fieldset>
 
-        <fieldset data-for="survey">
+        <fieldset data-for="size">
+            <legend>Размеры</legend>
+            <div class="field">
+                <label for="z-sizes">Какие размеры показать</label>
+                <input type="text" id="z-sizes" value="35-46">
+                <span class="hint">Диапазон через дефис или список через запятую: «35-46» или «36, 37, 38, 38.5».</span>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="z-label">Подпись над сеткой</label>
+                    <input type="text" id="z-label" value="Обувь">
+                </div>
+                <div class="field">
+                    <label for="z-cols">В строке</label>
+                    <select id="z-cols">
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6" selected>6</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label class="check"><input type="checkbox" id="z-multi" checked> Можно выбрать несколько размеров</label>
+                <span class="hint">Несколько — уходит массив строк, поле должно быть множественным. Один — уходит строка.</span>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="z-op">Операция</label>
+                    <input type="text" id="z-op" value="SizeInapp">
+                </div>
+                <div class="field">
+                    <label for="z-field">Доп. поле клиента</label>
+                    <input type="text" id="z-field" value="ShoeSize">
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset data-for="survey size">
             <legend>Экран благодарности</legend>
             <div class="field">
                 <label for="s-ty-title">Заголовок</label>
@@ -824,6 +866,196 @@ pre.code .c { color: var(--muted); font-style: italic; }
 
     function setQuestions(list) { questions = clone(list); renderQuestions(); }
 
+    /* ── Размер обуви ─────────────────────────────────── */
+    function parseSizes(text) {
+        var out = [];
+        String(text || '').split(/[,;\s]+/).forEach(function (tok) {
+            tok = tok.trim();
+            if (!tok) return;
+            var m = tok.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+            if (m) {
+                var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+                if (b < a) { var t = a; a = b; b = t; }
+                for (var v = a; v <= b && out.length < 60; v++) out.push(String(v));
+            } else if (out.length < 60) {
+                out.push(tok.replace(',', '.'));
+            }
+        });
+        return out.filter(function (v, i) { return out.indexOf(v) === i; });
+    }
+
+    function buildSizeCSS(s) {
+        return [
+"@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500;600&display=swap');",
+'',
+'#popmechanic-form, #popmechanic-form * { box-sizing: border-box; margin: 0; padding: 0; }',
+'#popmechanic-form {',
+'    position: absolute; top: 0; right: 0; bottom: 0; left: 0;',
+"    font-family: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;",
+'    color: #1A1814;',
+'}',
+'#popmechanic-form .popmechanic-overlay {',
+'    position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1;',
+'    background: rgba(40, 30, 18, 0.45);',
+'    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);',
+'    animation: pm-fade 0.3s ease both;',
+'}',
+'#popmechanic-form .popmechanic-main {',
+'    position: absolute; top: 50%; left: 50%; z-index: 2;',
+'    transform: translate(-50%, -50%);',
+'    width: calc(100% - 32px); max-width: 400px;',
+'    max-height: calc(100% - 32px);',
+'    overflow-y: auto; -webkit-overflow-scrolling: touch;',
+'    background: #FBF9F4;',
+'    border-radius: 16px;',
+'    padding: 30px 26px 18px;',
+'    box-shadow: 0 20px 50px rgba(0,0,0,0.22);',
+'    animation: pm-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;',
+'}',
+'#popmechanic-form .pm-close {',
+'    position: absolute; top: 20px; right: 20px;',
+'    width: 30px; height: 30px;',
+'    background: none; border: none; cursor: pointer;',
+'    display: flex; align-items: center; justify-content: center;',
+'}',
+'#popmechanic-form .pm-close svg { width: 18px; height: 18px; stroke: #9A8664; stroke-width: 1.3; }',
+'#popmechanic-form .pm-eyebrow {',
+'    display: flex; align-items: center; gap: 14px;',
+'    font-size: 10px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase;',
+'    color: #3A352C; margin-bottom: 16px;',
+'}',
+'#popmechanic-form .pm-eyebrow::after { content: ""; width: 46px; height: 1px; background: #C6A97A; }',
+'#popmechanic-form .pm-title {',
+"    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;",
+'    font-weight: 500; font-size: 34px; line-height: 1.05; letter-spacing: -0.01em;',
+'    color: #141210; margin-bottom: 12px; padding-right: 28px;',
+'}',
+'#popmechanic-form .pm-text {',
+'    font-size: 14px; line-height: 1.45; color: #5F594E; margin-bottom: 22px;',
+'}',
+'#popmechanic-form .pm-label {',
+'    font-size: 10px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase;',
+'    color: #3A352C; margin-bottom: 12px;',
+'}',
+'#popmechanic-form .pm-grid {',
+'    display: grid; grid-template-columns: repeat(' + s.zCols + ', 1fr); gap: 8px;',
+'    margin-bottom: 24px;',
+'}',
+'#popmechanic-form .pm-chip {',
+'    height: 46px; border-radius: 6px;',
+'    background: #FFFFFF; border: 1px solid #D8C49F;',
+'    box-shadow: 0 1px 3px rgba(120, 95, 55, 0.12);',
+"    font-family: 'Cormorant Garamond', Georgia, serif;",
+'    font-size: 18px; font-weight: 500; color: #1A1814;',
+'    cursor: pointer;',
+'    transition: background 0.15s, border-color 0.15s, color 0.15s;',
+'    -webkit-tap-highlight-color: transparent;',
+'}',
+'#popmechanic-form .pm-chip[aria-pressed="true"] {',
+'    background: #B48F5C; border-color: #B48F5C; color: #FFFFFF;',
+'    box-shadow: none;',
+'}',
+'#popmechanic-form .pm-btn {',
+'    width: 100%; height: 54px; border: none; border-radius: 10px;',
+'    background: linear-gradient(180deg, #CDAE7E 0%, #B6915E 60%, #A6804C 100%);',
+'    color: #FFFFFF; font-family: inherit;',
+'    font-size: 12px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase;',
+'    display: flex; align-items: center; justify-content: center; gap: 14px;',
+'    cursor: pointer; margin-top: 2px;',
+'    box-shadow: 0 6px 16px rgba(150,112,62,0.25);',
+'    transition: opacity 0.2s;',
+'}',
+'#popmechanic-form .pm-btn[disabled] { opacity: 0.5; cursor: default; }',
+'#popmechanic-form .pm-btn svg { width: 18px; height: 12px; stroke: #fff; stroke-width: 1.3; fill: none; }',
+'#popmechanic-form .pm-later {',
+'    display: block; width: 100%; margin-top: 10px; padding: 10px;',
+'    background: none; border: none; cursor: pointer;',
+'    font-family: inherit; font-size: 13px; color: #6E675B;',
+'}',
+'#popmechanic-form #pm-thankyou { display: none; padding-bottom: 8px; }',
+'#popmechanic-form #pm-thankyou .pm-text { margin-bottom: 24px; }',
+'',
+'@keyframes pm-fade { from { opacity: 0; } to { opacity: 1; } }',
+'@keyframes pm-in {',
+'    from { opacity: 0; transform: translate(-50%, -50%) translateY(14px); }',
+'    to   { opacity: 1; transform: translate(-50%, -50%); }',
+'}',
+'@media (prefers-reduced-motion: reduce) {',
+'    #popmechanic-form .popmechanic-main, #popmechanic-form .popmechanic-overlay { animation: none; }',
+'}',
+'@media (max-width: 360px) {',
+'    #popmechanic-form .popmechanic-main { padding: 26px 18px 14px; }',
+'    #popmechanic-form .pm-title { font-size: 29px; }',
+'    #popmechanic-form .pm-grid { gap: 6px; }',
+'    #popmechanic-form .pm-chip { height: 40px; font-size: 16px; }',
+'}'
+        ].join('\n');
+    }
+
+    function buildSizeHTML(s) {
+        var h = [];
+        h.push('<!--',
+            '  Oskelly · размер обуви (' + (s.zMulti ? 'несколько размеров' : 'один размер') + ')',
+            '  ЗАПИСЬ В MINDBOX — операция и поле должны существовать в проекте, иначе выбор молча потеряется:',
+            '    operation: "' + s.zOp + '"',
+            '    customFields.' + s.zField + '  ← ' + (s.zMulti ? 'массив строк (множественное поле), напр. ["38","39"]' : 'строка, напр. "38"'),
+            '-->',
+            '<div class="popmechanic-reset" id="popmechanic-form">',
+            '    <div class="popmechanic-overlay" data-popmechanic-close></div>',
+            '    <div class="popmechanic-main">',
+            '        <button class="pm-close" type="button" aria-label="Закрыть" data-popmechanic-close>',
+            '            <svg viewBox="0 0 18 18"><path d="M1 1l16 16M17 1L1 17"/></svg>',
+            '        </button>',
+            '',
+            '        <div id="pm-pick">');
+        if (s.eyebrow) h.push('            <div class="pm-eyebrow">' + esc(s.eyebrow) + '</div>');
+        if (s.title)   h.push('            <div class="pm-title">' + esc(s.title) + '</div>');
+        if (s.lead)    h.push('            <div class="pm-text">' + esc(s.lead) + '</div>');
+        h.push('');
+        if (s.zLabel)  h.push('            <div class="pm-label">' + esc(s.zLabel) + '</div>');
+        var op = String(s.zOp || '').replace(/[^\w.\-]/g, '');
+        var field = String(s.zField || '').replace(/[^\w.\-]/g, '');
+        var gridJS = [
+"var t=event.target;while(t&&t!==this&&!(t.getAttribute&&t.getAttribute('data-size')))t=t.parentNode;",
+"if(!t||t===this)return;",
+"var was=t.getAttribute('aria-pressed')==='true';",
+s.zMulti ? '' : "var all=this.querySelectorAll('.pm-chip');for(var i=0;i<all.length;i++)all[i].setAttribute('aria-pressed','false');",
+"t.setAttribute('aria-pressed',was?'false':'true');",
+"var b=document.getElementById('pm-save');",
+"if(this.querySelector('[aria-pressed=true]'))b.removeAttribute('disabled');else b.setAttribute('disabled','');"
+        ].join('');
+        var saveJS = [
+"var c=document.querySelectorAll('#pm-grid [aria-pressed=true]'),v=[];",
+"for(var i=0;i<c.length;i++)v.push(c[i].getAttribute('data-size'));",
+"if(!v.length)return;",
+"try{mindbox('async',{operation:'" + op + "',data:{customer:{customFields:{'" + field + "':" + (s.zMulti ? 'v' : 'v[0]') + "}}},onSuccess:function(){},onError:function(){}});}catch(e){}",
+"document.getElementById('pm-pick').style.display='none';",
+"document.getElementById('pm-thankyou').style.display='block';"
+        ].join('');
+        h.push('            <div class="pm-grid" id="pm-grid" onclick="' + esc(gridJS) + '">');
+        s.zSizes.forEach(function (v) {
+            h.push('                <button type="button" class="pm-chip" aria-pressed="false" data-size="' + esc(v) + '">' + esc(v) + '</button>');
+        });
+        h.push('            </div>',
+            '',
+            '            <button class="pm-btn" type="button" id="pm-save" disabled onclick="' + esc(saveJS) + '">',
+            '                ' + esc(s.cta || 'Сохранить'),
+            '                <svg viewBox="0 0 18 12"><path d="M0 6h16M11 1l5 5-5 5"/></svg>',
+            '            </button>');
+        if (s.skip) h.push('            <button class="pm-later" type="button" data-popmechanic-close>' + esc(s.skip) + '</button>');
+        h.push('        </div>',
+            '',
+            '        <div id="pm-thankyou">',
+            '            <div class="pm-eyebrow">Готово</div>');
+        if (s.sTyTitle) h.push('            <div class="pm-title">' + esc(s.sTyTitle) + '</div>');
+        if (s.sTyText)  h.push('            <div class="pm-text">' + esc(s.sTyText) + '</div>');
+        h.push('            <button class="pm-btn" type="button" data-popmechanic-close>' + esc(s.sTyBtn || 'Закрыть') + '</button>',
+            '        </div>',
+            '    </div>',
+            '</div>');
+        return h.join('\n');
+    }
+
     var LAYOUT_HINT = {
         sheet:  'Не перекрывает экран целиком — подходит, когда человек уже смотрит товар.',
         modal:  'Требует внимания. Для одного решения: промокод, выбор, подтверждение.',
@@ -880,6 +1112,10 @@ pre.code .c { color: var(--muted); font-style: italic; }
             sOp: val('s-op'), sFinish: val('s-finish'),
             sTyTitle: val('s-ty-title'), sTyText: val('s-ty-text'), sTyBtn: val('s-ty-btn'),
 
+            zSizes: parseSizes(val('z-sizes')), zLabel: val('z-label'),
+            zCols: parseInt(val('z-cols'), 10) || 6, zMulti: on('z-multi'),
+            zOp: val('z-op'), zField: val('z-field'),
+
             brands: val('brands').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
             endpoint: val('endpoint'), origin: val('origin')
         };
@@ -898,6 +1134,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
 
     /* ── CSS ──────────────────────────────────────────── */
     function buildCSS(s) {
+        if (s.kind === 'size') return buildSizeCSS(s);
         var r = s.radius, css = [];
 
         if (s.font) css.push("@import url('https://fonts.googleapis.com/css2?family=" +
@@ -1177,6 +1414,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
 
     /* ── HTML ─────────────────────────────────────────── */
     function buildHTML(s) {
+        if (s.kind === 'size') return buildSizeHTML(s);
         var h = [], sc = [];
         var hasOverlay = (s.layout === 'sheet' || s.layout === 'modal');
 
@@ -1205,7 +1443,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
         h.push('        <button class="pm-close" type="button" aria-label="Закрыть" data-popmechanic-close>&times;</button>');
         h.push('');
 
-        if (s.kind === 'survey') h.push('        <div id="pm-survey">');
+        if (s.kind === 'survey') h.push('        <div id="pm-survey" onclick="' + esc(surveyHandler(s)) + '">');
         if (s.eyebrow) h.push('        <div class="pm-eyebrow">' + esc(s.eyebrow) + '</div>');
         if (s.title && s.kind !== 'survey') h.push('        <h2 class="pm-title">' + esc(s.title) + '</h2>');
         if (s.lead && s.kind !== 'survey')  h.push('        <p class="pm-lead">' + esc(s.lead) + '</p>');
@@ -1272,7 +1510,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
                     var view = q.type === 'yesno' ? '2' : q.view;
                     h.push('            <div class="pm-options' + (view === 'list' ? '' : ' pm-options--' + view) + '">');
                     q.options.forEach(function (o) {
-                        h.push('                <button class="pm-opt" type="button"' +
+                        h.push('                <button class="pm-opt" type="button" data-act="pick"' +
                             (q.type === 'multi' ? ' aria-pressed="false"' : '') +
                             ' data-value="' + esc(o.value) + '">' + esc(o.label) + '</button>');
                     });
@@ -1289,7 +1527,7 @@ pre.code .c { color: var(--muted); font-style: italic; }
                     h.push('                <div class="pm-scale' + (stars ? ' pm-scale--stars' : '') + '"' +
                         (stars ? '' : ' style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr))"') + '>');
                     for (var v = from; v <= to; v++) {
-                        h.push('                    <button class="pm-scale-btn" type="button" data-value="' + v + '" aria-label="' + v + '">' +
+                        h.push('                    <button class="pm-scale-btn" type="button" data-act="pick" data-value="' + v + '" aria-label="' + v + '">' +
                             (stars ? '&#9733;' : v) + '</button>');
                     }
                     h.push('                </div>');
@@ -1302,10 +1540,10 @@ pre.code .c { color: var(--muted); font-style: italic; }
                 if (needsNext || !q.required) {
                     h.push('            <div class="pm-actions">');
                     if (needsNext) {
-                        h.push('                <button class="pm-btn pm-btn--primary pm-next" type="button"' +
+                        h.push('                <button class="pm-btn pm-btn--primary pm-next" type="button" data-act="next"' +
                             (q.required ? ' disabled' : '') + '>' + esc(last ? (s.sFinish || 'Отправить') : (s.cta || 'Далее')) + '</button>');
                     }
-                    if (!q.required) h.push('                <button class="pm-btn pm-btn--ghost pm-skip" type="button">Пропустить</button>');
+                    if (!q.required) h.push('                <button class="pm-btn pm-btn--ghost pm-skip" type="button" data-act="skip">Пропустить</button>');
                     h.push('            </div>');
                 }
                 h.push('        </div>');
@@ -1360,7 +1598,8 @@ pre.code .c { color: var(--muted); font-style: italic; }
         if (s.promoOn && (s.kind === 'list' || s.kind === 'promo')) sc.push(copyScript());
         if (s.kind === 'product') sc.push(productScript(s));
         if (s.kind === 'list')    sc.push(listScript(s));
-        if (s.kind === 'survey')  sc.push(surveyScript(s));
+        // Опрос работает на onclick в разметке, без <script>: в мобильном SDK
+        // разметка может вставляться так, что теги <script> не выполняются.
 
         if (sc.length) h.push('', '<' + 'script>', sc.join('\n\n'), '<' + '/script>');
         return h.join('\n');
@@ -1416,6 +1655,35 @@ pre.code .c { color: var(--muted); font-style: italic; }
 '        legacy(); finish();',
 '    });',
 '})();'].join('\n');
+    }
+
+    // Один обработчик на весь опрос (делегирование). Состояние читается из DOM,
+    // поэтому глобальные переменные и <script> не нужны. Только одинарные кавычки
+    // и ES5 — код живёт в атрибуте onclick.
+    function surveyHandler(s) {
+        var op = String(s.sOp || '').replace(/[^\w.\-]/g, '');
+        return [
+"var root=this,t=event.target;",
+"while(t&&t!==root&&!(t.getAttribute&&t.getAttribute('data-act')))t=t.parentNode;",
+"if(!t||t===root)return;",
+"var st=t;while(st&&st!==root&&!/(^|\\s)pm-step(\\s|$)/.test(st.className||''))st=st.parentNode;",
+"if(!st||st===root||st.getAttribute('data-done'))return;",
+"var act=t.getAttribute('data-act'),type=st.getAttribute('data-type'),field=st.getAttribute('data-field'),req=st.getAttribute('data-required');",
+"var save=function(v){var f={};f[field]=v;try{mindbox('async',{operation:'" + op + "',data:{customer:{customFields:f}},onSuccess:function(){},onError:function(){}});}catch(e){}};",
+"var go=function(){st.setAttribute('data-done','1');st.style.display='none';var n=st.nextSibling;",
+"while(n&&!(n.nodeType===1&&/(^|\\s)pm-step(\\s|$)/.test(n.className||'')))n=n.nextSibling;",
+"if(n){n.style.display='block';}else{root.style.display='none';var ty=document.getElementById('pm-thankyou');if(ty)ty.style.display='block';}};",
+"if(act==='skip'){go();return;}",
+"if(act==='pick'&&type==='multi'){t.setAttribute('aria-pressed',t.getAttribute('aria-pressed')==='true'?'false':'true');",
+"var nb=st.querySelector('.pm-next');if(nb&&req)nb.disabled=!st.querySelector('[aria-pressed=true]');return;}",
+"if(act==='pick'&&type==='scale'){var m=st.querySelectorAll('.pm-scale-btn'),stars=!!st.querySelector('.pm-scale--stars'),k=-1,i;",
+"for(i=0;i<m.length;i++){if(m[i]===t)k=i;}",
+"for(i=0;i<m.length;i++){var on=stars?i<=k:i===k;m[i].className=m[i].className.replace(/\\s*is-on/g,'')+(on?' is-on':'');}",
+"st.setAttribute('data-done','1');save(parseInt(t.getAttribute('data-value'),10));setTimeout(function(){st.removeAttribute('data-done');go();},250);return;}",
+"if(act==='pick'){save(t.getAttribute('data-value'));go();return;}",
+"if(act==='next'){var c=st.querySelectorAll('[aria-pressed=true]'),v=[],j;for(j=0;j<c.length;j++)v.push(c[j].getAttribute('data-value'));",
+"if(v.length){save(v);go();}else if(!req){go();}}"
+        ].join('');
     }
 
     function surveyScript(s) {
@@ -1806,7 +2074,7 @@ apiHelpers(s),
             ? 'Только стили. Строк: ' + cache.css.split('\n').length + '.'
             : 'Разметка и скрипты — всё в поле HTML. Строк: ' + cache.html.split('\n').length + '.';
 
-        var live = s.kind === 'survey';
+        var live = s.kind === 'survey' || s.kind === 'size';
         var frame = $('preview');
         frame.setAttribute('sandbox', live ? 'allow-scripts' : '');
         $('pv-bar').hidden = !live;
@@ -1861,7 +2129,19 @@ apiHelpers(s),
             layout: 'modal',
             't-eyebrow': 'Опрос Oskelly',
             't-cta': 'Далее', 't-skip': 'Не сейчас', 'promo-on': false,
-            's-finish': 'Отправить'
+            's-finish': 'Отправить',
+            's-ty-title': 'Спасибо за ответ',
+            's-ty-text': 'Учтём его, чтобы показывать вам то, что действительно интересно.',
+            's-ty-btn': 'Закрыть'
+        },
+        size: {
+            't-eyebrow': 'Один вопрос',
+            't-title': 'Какой у вас размер?',
+            't-lead': 'Каждая вещь на Oskelly — в единственном экземпляре. Будем сообщать только о тех поступлениях, которые вам подойдут.',
+            't-cta': 'Сохранить', 't-skip': 'Не сейчас', 'promo-on': false,
+            's-ty-title': 'Размеры сохранены',
+            's-ty-text': 'Будем сообщать о поступлениях, которые вам подойдут.',
+            's-ty-btn': 'Закрыть'
         }
     };
 
