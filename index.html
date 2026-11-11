@@ -303,6 +303,33 @@ pre.code .c { color: var(--muted); font-style: italic; }
     font-size: 12.5px;
     line-height: 1.5;
 }
+/* ── Интерактивное превью опроса ───────────────────────── */
+.pv-bar {
+    width: 100%; max-width: 330px; margin: -6px auto 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+}
+.pv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pv-title {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--muted);
+}
+.pv-restart {
+    padding: 6px 12px;
+    border: 1px solid var(--ink);
+    border-radius: var(--r);
+    background: var(--ink); color: var(--paper);
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    cursor: pointer;
+}
+.pv-log { margin-top: 10px; font-family: var(--font-mo); font-size: 11.5px; line-height: 1.6; }
+.pv-log:empty::before { content: "Пока ничего. Ответьте на вопрос в превью."; font-family: var(--font-ui); color: var(--muted); }
+.pv-log div { word-break: break-word; }
+.pv-log .k { color: var(--accent); }
+.pv-log .m { color: var(--muted); }
+
 /* ── Редактор вопросов ─────────────────────────────────── */
 .q-card {
     padding: 14px;
@@ -635,15 +662,6 @@ pre.code .c { color: var(--muted); font-style: italic; }
             </div>
         </fieldset>
 
-        <fieldset data-for="survey">
-            <legend>Превью</legend>
-            <div class="field">
-                <label for="s-preview">Какой экран показать</label>
-                <select id="s-preview"></select>
-                <span class="hint">Превью без JS, поэтому шаги не переключаются нажатием — выберите экран здесь.</span>
-            </div>
-        </fieldset>
-
         <fieldset data-for="product list">
             <legend>Фильтр по брендам</legend>
             <div class="field">
@@ -675,10 +693,17 @@ pre.code .c { color: var(--muted); font-style: italic; }
 
         <div class="phone-head">
             <h2>Превью</h2>
-            <span>без JS — как в конструкторе</span>
+            <span id="pv-mode">без JS — как в конструкторе</span>
         </div>
         <div class="phone">
             <iframe id="preview" title="Превью инапа" sandbox=""></iframe>
+        </div>
+        <div class="pv-bar" id="pv-bar" hidden>
+            <div class="pv-top">
+                <span class="pv-title">Что ушло бы в Mindbox</span>
+                <button type="button" class="pv-restart" id="pv-restart">Пройти заново</button>
+            </div>
+            <div class="pv-log" id="pv-log"></div>
         </div>
 
         <div class="tabs">
@@ -795,13 +820,6 @@ pre.code .c { color: var(--muted); font-style: italic; }
                 '> Обязательный — без кнопки «Пропустить»</label>';
             return out + '</div>';
         }).join('');
-
-        var prev = $('s-preview'), keep = prev.value;
-        prev.innerHTML = questions.map(function (q, i) {
-            return '<option value="' + i + '">Вопрос ' + (i + 1) + '</option>';
-        }).join('') + '<option value="ty">Экран благодарности</option>';
-        prev.value = (keep === 'ty' || parseInt(keep, 10) < n) ? keep : '0';
-        if (!prev.value) prev.value = '0';
     }
 
     function setQuestions(list) { questions = clone(list); renderQuestions(); }
@@ -861,7 +879,6 @@ pre.code .c { color: var(--muted); font-style: italic; }
             }),
             sOp: val('s-op'), sFinish: val('s-finish'),
             sTyTitle: val('s-ty-title'), sTyText: val('s-ty-text'), sTyBtn: val('s-ty-btn'),
-            sPreview: val('s-preview'),
 
             brands: val('brands').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
             endpoint: val('endpoint'), origin: val('origin')
@@ -1733,6 +1750,48 @@ apiHelpers(s),
 
     /* ── отрисовка ────────────────────────────────────── */
     var cache = { html: '', css: '' };
+    var previewRun = 0;
+
+    // Заглушка SDK для превью опроса: вместо отправки в Mindbox
+    // пересылает вызов в конструктор, а закрытие инапа показывает плашкой.
+    var PREVIEW_MOCK = '<' + 'script>' + [
+        'window.mindbox = function (mode, o) {',
+        '    parent.postMessage({ pmPreview: "op", op: o && o.operation,',
+        '        fields: o && o.data && o.data.customer && o.data.customer.customFields }, "*");',
+        '    if (o && o.onSuccess) o.onSuccess();',
+        '};',
+        'document.addEventListener("click", function (e) {',
+        '    var t = e.target.closest ? e.target.closest("[data-popmechanic-close]") : null;',
+        '    if (!t) return;',
+        '    var f = document.getElementById("popmechanic-form");',
+        '    if (f) f.style.display = "none";',
+        '    var n = document.createElement("div");',
+        '    n.textContent = "Инап закрыт";',
+        '    n.style.cssText = "position:absolute;top:50%;left:0;right:0;text-align:center;' +
+            'font:500 14px -apple-system,sans-serif;color:#6b6b6b;transform:translateY(-50%)";',
+        '    document.body.appendChild(n);',
+        '    parent.postMessage({ pmPreview: "close" }, "*");',
+        '}, true);'
+    ].join('\n') + '<' + '/script>';
+
+    window.addEventListener('message', function (e) {
+        var d = e.data;
+        if (!d || !d.pmPreview || e.source !== $('preview').contentWindow) return;
+        var row = document.createElement('div');
+        if (d.pmPreview === 'op') {
+            var f = d.fields || {};
+            Object.keys(f).forEach(function (k) {
+                var r = document.createElement('div');
+                r.innerHTML = '<span class="m">' + esc(d.op) + ' · </span><span class="k">' + esc(k) +
+                    '</span> = ' + esc(JSON.stringify(f[k]));
+                $('pv-log').appendChild(r);
+            });
+            return;
+        }
+        row.className = 'm';
+        row.textContent = 'Инап закрыт';
+        $('pv-log').appendChild(row);
+    });
 
     function refresh() {
         var s = state();
@@ -1747,16 +1806,17 @@ apiHelpers(s),
             ? 'Только стили. Строк: ' + cache.css.split('\n').length + '.'
             : 'Разметка и скрипты — всё в поле HTML. Строк: ' + cache.html.split('\n').length + '.';
 
-        var previewOnly = '';
-        if (s.kind === 'survey') {
-            previewOnly = s.sPreview === 'ty'
-                ? '<style>#pm-survey{display:none!important}#pm-thankyou{display:block!important}</style>'
-                : '<style>#popmechanic-form .pm-step{display:none!important}#popmechanic-form #pm-step-' +
-                  (parseInt(s.sPreview, 10) || 0) + '{display:block!important}</style>';
-        }
-        $('preview').srcdoc =
+        var live = s.kind === 'survey';
+        var frame = $('preview');
+        frame.setAttribute('sandbox', live ? 'allow-scripts' : '');
+        $('pv-bar').hidden = !live;
+        $('pv-mode').textContent = live ? 'можно прощёлкать' : 'без JS — как в конструкторе';
+        $('pv-log').innerHTML = '';
+        frame.srcdoc =
             '<style>html,body{height:100%;margin:0;position:relative;overflow:hidden;' +
-            'background:#EDEAE6}</style><style>' + cache.css + '</style>' + previewOnly + cache.html;
+            'background:#EDEAE6}</style><style>' + cache.css + '</style>' +
+            (live ? PREVIEW_MOCK : '') + cache.html +
+            '<!-- ' + (++previewRun) + ' -->';
 
         var isSurvey = s.kind === 'survey';
         $('t-title').closest('.field').hidden = isSurvey;
@@ -1801,7 +1861,7 @@ apiHelpers(s),
             layout: 'modal',
             't-eyebrow': 'Опрос Oskelly',
             't-cta': 'Далее', 't-skip': 'Не сейчас', 'promo-on': false,
-            's-finish': 'Отправить', 's-preview': '0'
+            's-finish': 'Отправить'
         }
     };
 
@@ -1864,12 +1924,13 @@ apiHelpers(s),
         renderQuestions();
         refresh();
     });
+    $('pv-restart').addEventListener('click', function () { refresh(); });
+
     $('q-add').addEventListener('click', function () {
         var q = { type: 'single', text: 'Новый вопрос', hint: '', field: 'SurveyQ' + (questions.length + 1), required: true };
         Object.keys(Q_DEFAULTS.single).forEach(function (key) { q[key] = Q_DEFAULTS.single[key]; });
         questions.push(q);
         renderQuestions();
-        $('s-preview').value = String(questions.length - 1);
         refresh();
     });
 
